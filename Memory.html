@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<html>
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Jochens Test</title>
+        <link rel="icon" type="image/x-icon" href="favicon.ico">
+    </head>
+
+    <style>
+        .wrapper {
+            height: 100vh;
+        }
+        
+        table.outer{
+            width: 100%;
+            min-height: 100%;
+            //border: 1px solid;
+            table-layout: auto;						
+            text-align: left;
+            border-collapse: collapse;
+            empty-cells: show;						
+            padding: 0em;
+            margin: 0.0em;
+        }
+        
+        .center {
+            justify-content:center; 
+            text-align:center;
+            //border: 2px solid;
+        }
+        
+        .centerGrey {
+            justify-content:center; 
+            text-align:center;
+            border: 2px solid;
+            background-color:#BBBBBB;
+        }
+    </style>
+
+    <script>
+        var count = 6;
+        var delay = 250;
+        var throttled = false;
+        var cardStates = {};
+        var cardNames = {};
+        var clickState = "Idle"; // "Idle", "1 Card open", "2 Cards open", "Finished"
+        var lastX = 0, lastY = 0, lastlastX = 0, lastlastY = 0;
+        var message = "&nbsp;";
+        var remainingCards = 0;
+        var clickCount = 0;
+                
+        window.addEventListener('resize', 
+            function() 
+            {
+                if (!throttled)
+                {
+                    OnResize();
+                    throttled = true;
+                    setTimeout(function() { throttled = false; }, delay);
+                }  
+            }
+        );
+        
+        window.onload = function () 
+        {
+            Init();
+        }
+
+        function OnResize()
+        {
+            var tableWidth = window.innerWidth;
+            var tableHeight = window.innerHeight-10;
+            var imageWidth = tableWidth/count;
+            var imageHeight = tableHeight/count;
+            var imageSize = (imageWidth>imageHeight) ? imageHeight : imageWidth;
+            imageSize=imageSize*4/5;
+            var innerHeight = imageSize*count;
+            var innerWidth = imageSize*count;
+            var marginHeight = (tableHeight-innerHeight)/2;
+            var marginWidth = (tableWidth-innerWidth)/2;
+            //
+            var innerTable = "<table>";
+            for (y = 0; y < count; y++)
+            {                
+                innerTable = innerTable + "<tr>";
+                for (x = 0; x < count; x++)
+                {
+                    if(cardStates[x.toString()+'.'+y.toString()] == "open")
+                    {
+                        innerTable = innerTable + "<td><img src='" + cardNames[x.toString()+'.'+y.toString()] + "' width='" + imageSize + "px' height='" + imageSize + "px' onclick='Clicked(" + x.toString() + "," + y.toString() + ")' class='centerGrey'/></td>";
+                    }
+                    else
+                    {
+                        if(cardStates[x.toString()+'.'+y.toString()] == "closed")
+                        {
+                            innerTable = innerTable + "<td><img src='Pics/Rueckseite.jpg' width='" + imageSize + "px' height='" + imageSize + "px' onclick='Clicked(" + x.toString() + "," + y.toString() + ")' class='centerGrey'/></td>";
+                        }
+                        else
+                        {
+                            innerTable = innerTable + "<td class='center'>&nbsp;</td>";
+                        }
+                    }
+                }
+                innerTable = innerTable + "</tr>";
+            }
+            innerTable = innerTable + "</table>";
+            //
+            document.getElementById('main').innerHTML =
+            "<table>" +
+            "  <tr style='height:"+marginHeight+"px'><td>&nbsp;</td><td><center>" + message + "&nbsp;&nbsp;<input type='button' value='Neues Spiel' onclick='javascript:Init()'></center></td><td>&nbsp;</td></tr>" +
+            "  <tr style='height:"+innerHeight+ "px'>" +
+            "    <td style='width:"+marginWidth+"px' class='center'>&nbsp;</td>" +
+            "    <td style='width:"+innerWidth+"px'>"+innerTable+"</td>" +
+            "    <td style='width:"+marginWidth+"px' class='center'>&nbsp;</td>" +
+            "  </tr>" +
+            "  <tr style='height:"+marginHeight+"px'><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>" +
+            "</table>";
+        }
+        
+        function Init() 
+        {
+            var i = 0;
+            //
+            for (y = 0; y < count; y++) { for (x = 0; x < count; x++) { cardNames[x.toString()+'.'+y.toString()] = ""; } }
+            //
+            for (y = 0; y < count; y++)
+            {                
+                for (x = 0; x < count; x++)
+                {
+                    var imageNumber= Math.floor(i / 2);
+                    cardStates[x.toString()+'.'+y.toString()] = "closed"; // closed open deleted
+                    xx = Math.floor(Math.random()*count);
+                    yy = Math.floor(Math.random()*count);
+                    while(cardNames[xx.toString()+'.'+yy.toString()] != "")
+                    {
+                        xx++;
+                        if(xx>=count)
+                        {
+                            xx = 0;
+                            yy++;
+                            if(yy>=count) yy = 0;
+                        }
+                    }
+                    cardNames[xx.toString()+'.'+yy.toString()] = "Pics/" + imageNumber.toString() + ".jpg";
+                    i++;
+                }
+            }
+            remainingCards = count*count;
+            clickCount = 0;
+            message = "Klicks: " + clickCount.toString();
+            clickState = "Idle";
+            OnResize();
+        }
+        
+        function Clicked(x,y) 
+        {
+            if(clickState == "Finished")
+            {
+                Init();
+            }
+            else
+            {
+                if(clickState == "Idle")
+                {
+                    cardStates[x.toString()+'.'+y.toString()] = "open";
+                    lastX = x;
+                    lastY = y;
+                    clickState = "1 Card open";
+                }
+                else
+                {
+                    if(clickState == "1 Card open")
+                    {
+                        if(lastX != x || lastY != y)
+                        {
+                            clickCount++;
+                            if(cardNames[x.toString()+'.'+y.toString()]==cardNames[lastX.toString()+'.'+lastY.toString()])
+                            {
+                                cardStates[x.toString()+'.'+y.toString()] = "deleted";
+                                cardStates[lastX.toString()+'.'+lastY.toString()] = "deleted";
+                                clickState = "Idle";
+                                remainingCards--;
+                                remainingCards--;
+                                if(remainingCards == 0) clickState = "Finished";
+                            }
+                            else
+                            {
+                                cardStates[x.toString()+'.'+y.toString()] = "open";
+                                lastlastX = x;
+                                lastlastY = y;
+                                clickState = "2 Cards open";
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if(clickState == "2 Cards open")
+                        {
+                            cardStates[lastlastX.toString()+'.'+lastlastY.toString()] = "closed";
+                            cardStates[lastX.toString()+'.'+lastY.toString()] = "closed";
+                            clickState = "Idle";
+                        }
+                    }
+                }            
+            }            
+            message = "Klicks: " + clickCount.toString();
+            OnResize();
+        }
+    </script>
+
+    <body>
+        <div id="main">Jochens Test</div>
+    </body>
+
+</html>
+
+
+
